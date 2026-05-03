@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Interview Coach</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface2: #1a1a26;
+      --border: #2a2a3d;
+      --accent: #6c63ff;
+      --accent2: #ff6584;
+      --accent3: #43e97b;
+      --text: #e8e8f0;
+      --text-muted: #7070a0;
+      --gold: #ffd700;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(108,99,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(108,99,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .glow-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb1 { width: 500px; height: 500px; background: rgba(108,99,255,0.12); top: -100px; right: -100px; }
+    .orb2 { width: 400px; height: 400px; background: rgba(255,101,132,0.08); bottom: -100px; left: -100px; }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── HEADER ── */
+    header {
+      padding: 32px 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .logo-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; }
+    .logo-text span { color: var(--accent); }
+    .badge {
+      margin-left: auto;
+      background: rgba(108,99,255,0.15);
+      border: 1px solid rgba(108,99,255,0.3);
+      color: var(--accent);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    /* ── SCREENS ── */
+    .screen { display: none; animation: fadeUp 0.5s ease forwards; }
+    .screen.active { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── UPLOAD SCREEN ── */
+    .hero {
+      text-align: center;
+      padding: 60px 0 40px;
+    }
+    .hero-eyebrow {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(108,99,255,0.1);
+      border: 1px solid rgba(108,99,255,0.2);
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 480px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    .upload-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      margin-bottom: 40px;
+    }
+
+    .form-group { margin-bottom: 24px; }
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--accent);
+    }
+    .form-group select option { background: var(--surface2); }
+
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 14px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: var(--surface2);
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(108,99,255,0.05);
+    }
+    .drop-zone .icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .drop-zone p { color: var(--text-muted); font-size: 0.9rem; }
+    .drop-zone strong { color: var(--accent); }
+    .drop-zone input[type="file"] { display: none; }
+    .file-selected {
+      margin-top: 12px;
+      padding: 10px 16px;
+      background: rgba(67, 233, 123, 0.1);
+      border: 1px solid rgba(67, 233, 123, 0.3);
+      border-radius: 8px;
+      color: var(--accent3);
+      font-size: 0.85rem;
+      display: none;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--accent), #8b85ff);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      letter-spacing: 0.03em;
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(108,99,255,0.4);
+    }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+    }
+    .feature-card .f-icon { font-size: 1.8rem; margin-bottom: 10px; }
+    .feature-card h3 { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; }
+    .feature-card p { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
+
+    /* ── LOADING ── */
+    #loadingScreen {
+      text-align: center;
+      padding: 100px 0;
+    }
+    .loader {
+      width: 60px; height: 60px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 24px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loadingScreen h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+    }
+    #loadingScreen p { color: var(--text-muted); }
+
+    /* ── INTERVIEW SCREEN ── */
+    .interview-header {
+      padding: 32px 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .interview-header h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+    .progress-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .q-counter {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .q-counter span { color: var(--accent); font-weight: 700; }
+
+    .progress-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-bottom: 32px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    .question-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 20px;
+    }
+    .q-type-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 16px;
+    }
+    .q-type-badge.technical { background: rgba(108,99,255,0.15); color: var(--accent); border: 1px solid rgba(108,99,255,0.3); }
+    .q-type-badge.behavioral { background: rgba(255,101,132,0.15); color: var(--accent2); border: 1px solid rgba(255,101,132,0.3); }
+    .q-type-badge.role { background: rgba(67,233,123,0.15); color: var(--accent3); border: 1px solid rgba(67,233,123,0.3); }
+
+    .question-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+    .tip-box {
+      background: rgba(108,99,255,0.07);
+      border-left: 3px solid var(--accent);
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .tip-box strong { color: var(--accent); }
+
+    .answer-area {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 20px;
+    }
+    .answer-area label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+    }
+    textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      resize: vertical;
+      min-height: 140px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: var(--accent); }
+    .char-count {
+      text-align: right;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* ── EVALUATION ── */
+    .eval-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .eval-card.visible { display: block; animation: fadeUp 0.4s ease; }
+    .eval-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .eval-header h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+    .score-circle {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      border: 3px solid;
+    }
+    .score-circle .score-num { font-size: 1.3rem; font-weight: 800; }
+    .score-circle .score-denom { font-size: 0.6rem; color: var(--text-muted); }
+    .score-excellent { border-color: var(--accent3); color: var(--accent3); }
+    .score-good { border-color: var(--accent); color: var(--accent); }
+    .score-average { border-color: var(--gold); color: var(--gold); }
+    .score-poor { border-color: var(--accent2); color: var(--accent2); }
+
+    .eval-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .eval-section h4 {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+    .eval-section.strengths h4 { color: var(--accent3); }
+    .eval-section.improvements h4 { color: var(--accent2); }
+    .eval-list { list-style: none; }
+    .eval-list li {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      padding: 4px 0;
+      padding-left: 16px;
+      position: relative;
+      line-height: 1.4;
+    }
+    .eval-list li::before { content: '•'; position: absolute; left: 0; }
+    .strengths .eval-list li::before { color: var(--accent3); }
+    .improvements .eval-list li::before { color: var(--accent2); }
+
+    .ideal-hint {
+      background: rgba(108,99,255,0.07);
+      border: 1px solid rgba(108,99,255,0.2);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .ideal-hint strong { color: var(--accent); display: block; margin-bottom: 4px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .btn-next {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--accent), #8b85ff);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: none;
+    }
+    .btn-next.visible { display: block; }
+    .btn-next:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(108,99,255,0.4); }
+
+    /* ── REPORT SCREEN ── */
+    .report-hero {
+      text-align: center;
+      padding: 50px 0 40px;
+    }
+    .report-hero .trophy { font-size: 4rem; margin-bottom: 16px; }
+    .report-hero h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+    .report-hero p { color: var(--text-muted); }
+
+    .overall-score-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .big-score {
+      font-family: 'Syne', sans-serif;
+      font-size: 5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .big-score-denom { font-size: 1.5rem; color: var(--text-muted); font-weight: 400; }
+    .hire-badge {
+      display: inline-block;
+      padding: 8px 24px;
+      border-radius: 30px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-top: 16px;
+    }
+    .hire-strong { background: rgba(67,233,123,0.15); color: var(--accent3); border: 2px solid rgba(67,233,123,0.4); }
+    .hire-yes { background: rgba(108,99,255,0.15); color: var(--accent); border: 2px solid rgba(108,99,255,0.4); }
+    .hire-maybe { background: rgba(255,215,0,0.15); color: var(--gold); border: 2px solid rgba(255,215,0,0.4); }
+    .hire-no { background: rgba(255,101,132,0.15); color: var(--accent2); border: 2px solid rgba(255,101,132,0.4); }
+
+    .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .report-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .report-section h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 14px;
+    }
+    .report-section.strengths-sec h3 { color: var(--accent3); }
+    .report-section.improve-sec h3 { color: var(--accent2); }
+
+    .report-summary {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .report-summary h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .report-summary p { line-height: 1.7; color: var(--text-muted); }
+
+    .next-steps {
+      background: linear-gradient(135deg, rgba(108,99,255,0.1), rgba(255,101,132,0.05));
+      border: 1px solid rgba(108,99,255,0.2);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+    .next-steps h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 14px;
+    }
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .step-num {
+      width: 24px; height: 24px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .step-text { font-size: 0.9rem; color: var(--text-muted); padding-top: 2px; }
+
+    .btn-restart {
+      width: 100%;
+      padding: 16px;
+      background: transparent;
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      color: var(--accent);
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 60px;
+    }
+    .btn-restart:hover { background: var(--accent); color: white; }
+
+    /* loading overlay */
+    .evaluating-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10,10,15,0.85);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      backdrop-filter: blur(4px);
+    }
+    .evaluating-overlay.show { display: flex; }
+    .evaluating-overlay .loader { margin: 0; }
+    .evaluating-overlay p {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      color: var(--text-muted);
+    }
+
+    @media(max-width: 600px) {
+      .features { grid-template-columns: 1fr; }
+      .eval-grid { grid-template-columns: 1fr; }
+      .report-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="glow-orb orb1"></div>
+<div class="glow-orb orb2"></div>
+
+<div class="evaluating-overlay" id="evalOverlay">
+  <div class="loader"></div>
+  <p id="overlayMsg">Evaluating your answer...</p>
+</div>
+
+<div class="container">
+  <header>
+    <div class="logo-icon">🎯</div>
+    <div class="logo-text">Interview<span>Coach</span> AI</div>
+  </header>
+
+  <div id="uploadScreen" class="screen active">
+    <div class="hero">
+      <div class="hero-eyebrow">AI-Powered Interview Prep</div>
+      <h1>Ace Your Next<br/><em>Interview</em></h1>
+      <p>Upload your CV, select a job role, and get personalized interview questions with real-time AI feedback.</p>
+    </div>
+
+    <div class="features">
+      <div class="feature-card">
+        <div class="f-icon">📄</div>
+        <h3>CV Analysis</h3>
+        <p>AI reads your CV and tailors questions to your specific experience.</p>
+      </div>
+      <div class="feature-card">
+        <div class="f-icon">🤖</div>
+        <h3>Live Feedback</h3>
+        <p>Get instant scoring and improvement tips after each answer.</p>
+      </div>
+      <div class="feature-card">
+        <div class="f-icon">📊</div>
+        <h3>Full Report</h3>
+        <p>Receive a detailed performance report with hiring recommendation.</p>
+      </div>
+    </div>
+
+    <div class="upload-card">
+      <div class="form-group">
+        <label>Job Role You're Applying For</label>
+        <select id="jobRole">
+          <option value="Software Engineer">Software Engineer</option>
+          <option value="Frontend Developer">Frontend Developer</option>
+          <option value="Backend Developer">Backend Developer</option>
+          <option value="Full Stack Developer">Full Stack Developer</option>
+          <option value="Data Scientist">Data Scientist</option>
+          <option value="Machine Learning Engineer">Machine Learning Engineer</option>
+          <option value="DevOps Engineer">DevOps Engineer</option>
+          <option value="Product Manager">Product Manager</option>
+          <option value="UI/UX Designer">UI/UX Designer</option>
+          <option value="Business Analyst">Business Analyst</option>
+          <option value="Cybersecurity Analyst">Cybersecurity Analyst</option>
+          <option value="Cloud Architect">Cloud Architect</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Upload Your CV (PDF)</label>
+        <div class="drop-zone" id="dropZone">
+          <div class="icon">📂</div>
+          <p><strong>Click to upload</strong> or drag & drop your CV here</p>
+          <p style="margin-top:6px; font-size:0.78rem;">PDF format only • Max 5MB</p>
+          <input type="file" id="cvFile" accept=".pdf"/>
+          <div class="file-selected" id="fileSelected">✅ <span id="fileName"></span></div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="startBtn" disabled>
+        Start Interview Session →
+      </button>
+    </div>
+  </div>
+
+  <div id="loadingScreen" class="screen">
+    <div style="padding: 100px 0; text-align:center;">
+      <div class="loader"></div>
+      <h2>Preparing Your Interview</h2>
+      <p style="color:var(--text-muted); margin-top:8px;">Analyzing your CV and generating personalized questions...</p>
+    </div>
+  </div>
+
+  <div id="interviewScreen" class="screen">
+    <div class="interview-header">
+      <div>
+        <h2 id="roleTitle">Interview Session</h2>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px;" id="roleSubtitle"></p>
+      </div>
+      <div class="progress-info">
+        <div class="q-counter">Question <span id="currentQ">1</span> of <span id="totalQ">5</span></div>
+      </div>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+
+    <div class="question-card" id="questionCard">
+      <div id="qTypeBadge" class="q-type-badge technical">Technical</div>
+      <div class="question-text" id="questionText">Loading question...</div>
+      <div class="tip-box"><strong>💡 Tip:</strong> <span id="questionTip"></span></div>
+    </div>
+
+    <div class="answer-area">
+      <label>Your Answer</label>
+      <textarea id="answerInput" placeholder="Type your answer here. Be specific and use examples from your experience..." rows="6"></textarea>
+      <div class="char-count"><span id="charCount">0</span> characters</div>
+    </div>
+
+    <div class="eval-card" id="evalCard">
+      <div class="eval-header">
+        <h3>AI Evaluation</h3>
+        <div class="score-circle" id="scoreCircle">
+          <div class="score-num" id="scoreNum">0</div>
+          <div class="score-denom">/10</div>
+        </div>
+      </div>
+      <div class="eval-grid">
+        <div class="eval-section strengths">
+          <h4>✅ Strengths</h4>
+          <ul class="eval-list" id="strengthsList"></ul>
+        </div>
+        <div class="eval-section improvements">
+          <h4>⚠️ Improvements</h4>
+          <ul class="eval-list" id="improvementsList"></ul>
+        </div>
+      </div>
+      <div class="ideal-hint">
+        <strong>💬 Ideal Answer Hint</strong>
+        <span id="idealHint"></span>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="submitBtn" style="margin-bottom:12px">
+      Submit Answer & Get Feedback →
+    </button>
+    <button class="btn-next" id="nextBtn">
+      Next Question →
+    </button>
+  </div>
+
+  <div id="reportScreen" class="screen">
+    <div class="report-hero">
+      <div class="trophy" id="trophyEmoji">🏆</div>
+      <h2>Interview Complete!</h2>
+      <p style="color:var(--text-muted);">Here's your detailed performance report</p>
+    </div>
+
+    <div class="overall-score-card">
+      <div>
+        <div class="big-score" id="bigScore">0<span class="big-score-denom">/10</span></div>
+        <div style="color:var(--text-muted); margin-bottom:8px; font-size:0.9rem;">Overall Score</div>
+        <div class="hire-badge" id="hireBadge">Evaluating...</div>
+      </div>
+    </div>
+
+    <div class="report-summary" id="reportSummary">
+      <h3>📋 Assessment Summary</h3>
+      <p id="summaryText"></p>
+    </div>
+
+    <div class="report-grid">
+      <div class="report-section strengths-sec">
+        <h3>✅ Top Strengths</h3>
+        <ul class="eval-list" id="reportStrengths"></ul>
+      </div>
+      <div class="report-section improve-sec">
+        <h3>⚠️ Key Improvements</h3>
+        <ul class="eval-list" id="reportImprovements"></ul>
+      </div>
+    </div>
+
+    <div class="next-steps" id="nextStepsCard">
+      <h3>🚀 Recommended Next Steps</h3>
+      <div id="nextStepsList"></div>
+    </div>
+
+    <button class="btn-restart" onclick="restartApp()">
+      ↩ Start New Interview Session
+    </button>
+  </div>
+
+</div><script>
+  let questions = [];
+  let currentIndex = 0;
+  let jobRole = '';
+  let answeredAll = false;
+  
+  // FIX: Added a variable to reliably hold the file data for both clicks and drag-and-drops
+  let selectedFile = null; 
+
+  // Drop zone
+  const dropZone = document.getElementById('dropZone');
+  const cvFile = document.getElementById('cvFile');
+
+  dropZone.addEventListener('click', () => cvFile.click());
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if(file && file.type === 'application/pdf') setFile(file);
+  });
+  cvFile.addEventListener('change', () => { if(cvFile.files[0]) setFile(cvFile.files[0]); });
+
+  function setFile(file) {
+    selectedFile = file; // FIX: Saving the file securely to memory
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileSelected').style.display = 'block';
+    document.getElementById('startBtn').disabled = false;
+  }
+
+  // Char count
+  document.getElementById('answerInput').addEventListener('input', function() {
+    document.getElementById('charCount').textContent = this.value.length;
+  });
+
+  // Screen switcher
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  // Upload & start
+  document.getElementById('startBtn').addEventListener('click', async () => {
+    const file = selectedFile; // FIX: using our securely saved file instead of cvFile.files[0]
+    jobRole = document.getElementById('jobRole').value;
+    if(!file) return;
+
+    showScreen('loadingScreen');
+
+    const formData = new FormData();
+    formData.append('cv', file);
+    formData.append('job_role', jobRole);
+
+    try {
+      const res = await fetch('/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if(data.error) { alert(data.error); showScreen('uploadScreen'); return; }
+      questions = data.questions;
+      document.getElementById('roleTitle').textContent = jobRole + ' Interview';
+      document.getElementById('roleSubtitle').textContent = questions.length + ' personalized questions based on your CV';
+      document.getElementById('totalQ').textContent = questions.length;
+      loadQuestion(0);
+      showScreen('interviewScreen');
+    } catch(e) {
+      alert('Something went wrong. Please try again.');
+      showScreen('uploadScreen');
+    }
+  });
+
+  function loadQuestion(idx) {
+    const q = questions[idx];
+    currentIndex = idx;
+    document.getElementById('currentQ').textContent = idx + 1;
+    document.getElementById('progressFill').style.width = ((idx / questions.length) * 100) + '%';
+
+    const badge = document.getElementById('qTypeBadge');
+    const type = (q.type || 'Technical').toLowerCase();
+    badge.textContent = q.type || 'Technical';
+    badge.className = 'q-type-badge ' + (type.includes('behav') ? 'behavioral' : type.includes('role') ? 'role' : 'technical');
+
+    document.getElementById('questionText').textContent = q.question;
+    document.getElementById('questionTip').textContent = q.tip || 'Be specific and use examples.';
+    document.getElementById('answerInput').value = '';
+    document.getElementById('charCount').textContent = '0';
+
+    // Hide eval + next
+    document.getElementById('evalCard').classList.remove('visible');
+    document.getElementById('nextBtn').classList.remove('visible');
+    document.getElementById('submitBtn').style.display = 'block';
+    document.getElementById('answerInput').disabled = false;
+  }
+
+  // Submit answer
+  document.getElementById('submitBtn').addEventListener('click', async () => {
+    const answer = document.getElementById('answerInput').value.trim();
+    if(answer.length < 20) { alert('Please write a more detailed answer (at least 20 characters).'); return; }
+
+    document.getElementById('evalOverlay').classList.add('show');
+    document.getElementById('submitBtn').style.display = 'none';
+    document.getElementById('answerInput').disabled = true;
+
+    try {
+      const res = await fetch('/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: questions[currentIndex].question, answer })
+      });
+      const data = await res.json();
+      showEvaluation(data);
+    } catch(e) {
+      alert('Evaluation failed. Please try again.');
+      document.getElementById('submitBtn').style.display = 'block';
+      document.getElementById('answerInput').disabled = false;
+    }
+    document.getElementById('evalOverlay').classList.remove('show');
+  });
+
+  function showEvaluation(ev) {
+    const score = ev.score || 0;
+    const circle = document.getElementById('scoreCircle');
+    document.getElementById('scoreNum').textContent = score;
+    circle.className = 'score-circle ' + (score >= 8 ? 'score-excellent' : score >= 6 ? 'score-good' : score >= 4 ? 'score-average' : 'score-poor');
+
+    const sl = document.getElementById('strengthsList');
+    sl.innerHTML = (ev.strengths || []).map(s => `<li>${s}</li>`).join('');
+    const il = document.getElementById('improvementsList');
+    il.innerHTML = (ev.improvements || []).map(i => `<li>${i}</li>`).join('');
+    document.getElementById('idealHint').textContent = ev.ideal_answer_hint || '';
+
+    document.getElementById('evalCard').classList.add('visible');
+
+    const isLast = currentIndex === questions.length - 1;
+    const nextBtn = document.getElementById('nextBtn');
+    nextBtn.textContent = isLast ? 'Finish & View Report →' : 'Next Question →';
+    nextBtn.classList.add('visible');
+  }
+
+  // Next question
+  document.getElementById('nextBtn').addEventListener('click', async () => {
+    if(currentIndex < questions.length - 1) {
+      loadQuestion(currentIndex + 1);
+    } else {
+      // Generate report
+      document.getElementById('evalOverlay').classList.add('show');
+      document.getElementById('overlayMsg').textContent = 'Generating your report...';
+      document.getElementById('progressFill').style.width = '100%';
+
+      try {
+        const res = await fetch('/report', { method: 'POST' });
+        const data = await res.json();
+        showReport(data);
+        showScreen('reportScreen');
+      } catch(e) {
+        alert('Could not generate report.');
+      }
+      document.getElementById('evalOverlay').classList.remove('show');
+    }
+  });
+
+  function showReport(r) {
+    const score = parseFloat(r.overall_score) || 0;
+    document.getElementById('bigScore').innerHTML = score.toFixed(1) + '<span class="big-score-denom">/10</span>';
+    document.getElementById('trophyEmoji').textContent = score >= 8 ? '🏆' : score >= 6 ? '🎯' : score >= 4 ? '📈' : '💪';
+
+    const hire = r.hire_recommendation || 'Maybe';
+    const hireEl = document.getElementById('hireBadge');
+    hireEl.textContent = hire;
+    hireEl.className = 'hire-badge ' + (hire.includes('Strong') ? 'hire-strong' : hire === 'Hire' ? 'hire-yes' : hire === 'Maybe' ? 'hire-maybe' : 'hire-no');
+
+    document.getElementById('summaryText').textContent = r.summary || '';
+
+    document.getElementById('reportStrengths').innerHTML = (r.top_strengths || []).map(s => `<li>${s}</li>`).join('');
+    document.getElementById('reportImprovements').innerHTML = (r.key_improvements || []).map(i => `<li>${i}</li>`).join('');
+
+    const stepsEl = document.getElementById('nextStepsList');
+    stepsEl.innerHTML = (r.next_steps || []).map((s, i) =>
+      `<div class="step-item"><div class="step-num">${i+1}</div><div class="step-text">${s}</div></div>`
+    ).join('');
+  }
+
+  function restartApp() {
+    document.getElementById('cvFile').value = '';
+    selectedFile = null; // FIX: Ensure we clear the saved file memory on restart too
+    document.getElementById('fileSelected').style.display = 'none';
+    document.getElementById('startBtn').disabled = true;
+    showScreen('uploadScreen');
+  }
+</script>
+</body>
+</html>
